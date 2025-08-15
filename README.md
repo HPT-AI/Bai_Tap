@@ -32,14 +32,12 @@ Website dịch vụ toán học với kiến trúc microservices, cung cấp cá
 git clone <repository-url>
 cd math-service-website
 
-# Copy environment variables
+# Automated setup (recommended)
+./scripts/setup-dev.sh
+
+# Manual setup alternative
 cp .env.example .env.development
-
-# Khởi động toàn bộ hệ thống
 docker-compose up -d
-
-# Khởi tạo databases
-docker-compose exec postgres psql -U postgres -f /docker-entrypoint-initdb.d/init-databases.sql
 ```
 
 ### Truy cập ứng dụng

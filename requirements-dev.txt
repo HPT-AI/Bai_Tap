@@ -1,0 +1,41 @@
+# Development Dependencies for Math Service Website
+# Install with: pip install -r requirements-dev.txt
+
+# Include production requirements
+-r requirements.txt
+
+# Additional development tools
+pre-commit>=3.0.0
+pytest-xdist>=3.3.1          # Parallel test execution
+pytest-mock>=3.12.0          # Mocking utilities
+pytest-env>=1.1.0            # Environment variables for tests
+coverage>=7.3.0              # Code coverage analysis
+bandit>=1.7.5                # Security linting
+safety>=2.3.0                # Dependency vulnerability scanning
+
+# Documentation tools
+mkdocs>=1.5.0                # Documentation generator
+mkdocs-material>=9.4.0       # Material theme for MkDocs
+mkdocs-mermaid2-plugin>=1.1.0 # Mermaid diagrams support
+
+# Database development tools
+pgcli>=4.0.0                 # PostgreSQL CLI with autocomplete
+redis-cli>=0.1.0             # Redis CLI tools
+
+# API development tools
+httpie>=3.2.0                # HTTP client for API testing
+postman-cli>=1.0.0           # Postman CLI (if available)
+
+# Performance profiling
+py-spy>=0.3.14               # Python profiler
+memory-profiler>=0.61.0      # Memory usage profiler
+
+# Code quality extras
+vulture>=2.10                # Dead code finder
+radon>=6.0.1                 # Code complexity metrics
+xenon>=0.9.0                 # Code complexity monitoring
+
+# Git hooks and automation
+gitpython>=3.1.40            # Git repository interaction
+invoke>=2.2.0                # Task automation
+
