@@ -1,0 +1,200 @@
+# Pre-commit Configuration for Math Service Website
+# File: .pre-commit-config.yaml
+# Tự động chạy code quality checks trước khi commit
+
+repos:
+  # =============================================================================
+  # PYTHON CODE FORMATTING & LINTING
+  # =============================================================================
+
+  - repo: https://github.com/psf/black
+    rev: 23.12.1
+    hooks:
+      - id: black
+        name: Black Python formatter
+        description: Format Python code theo PEP 8 standard với line-length 88
+        language_version: python3
+        args: [--line-length=88]
+        files: \.py$
+
+  - repo: https://github.com/pycqa/isort
+    rev: 5.13.2
+    hooks:
+      - id: isort
+        name: Sort Python imports
+        description: Sắp xếp import statements theo thứ tự chuẩn
+        args: [--profile=black, --line-length=88]
+        files: \.py$
+
+  - repo: https://github.com/pycqa/flake8
+    rev: 7.0.0
+    hooks:
+      - id: flake8
+        name: Flake8 Python linter
+        description: Kiểm tra lỗi cú pháp, style violations, complexity
+        args: [--config=.flake8]
+        files: \.py$
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.8.0
+    hooks:
+      - id: mypy
+        name: MyPy type checker
+        description: Kiểm tra type hints và type safety
+        args: [--config-file=mypy.ini]
+        files: \.py$
+        additional_dependencies:
+          - types-redis
+          - types-requests
+          - sqlalchemy[mypy]
+
+  # =============================================================================
+  # TESTING
+  # =============================================================================
+
+  - repo: local
+    hooks:
+      - id: pytest-unit
+        name: Pytest unit tests
+        description: Chạy unit tests trước khi commit
+        entry: pytest
+        language: system
+        args: [--tb=short, -q, -x, -m, "unit"]
+        files: \.py$
+        pass_filenames: false
+        always_run: false
+        stages: [pre-commit]
+
+  # =============================================================================
+  # GENERAL CODE QUALITY
+  # =============================================================================
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      # Kiểm tra cú pháp YAML files
+      - id: check-yaml
+        name: Check YAML syntax
+        description: Kiểm tra cú pháp các file YAML (docker-compose, configs)
+        files: \.(yaml|yml)$
+
+      # Kiểm tra cú pháp JSON files
+      - id: check-json
+        name: Check JSON syntax
+        description: Kiểm tra cú pháp các file JSON (package.json, configs)
+        files: \.json$
+
+      # Kiểm tra merge conflicts
+      - id: check-merge-conflict
+        name: Check for merge conflicts
+        description: Phát hiện merge conflict markers trong code
+
+      # Kiểm tra file size quá lớn
+      - id: check-added-large-files
+        name: Check for large files
+        description: Ngăn commit files > 500KB
+        args: ['--maxkb=500']
+
+      # Xóa trailing whitespace
+      - id: trailing-whitespace
+        name: Trim trailing whitespace
+        description: Xóa khoảng trắng thừa cuối dòng
+
+      # Đảm bảo file kết thúc bằng newline
+      - id: end-of-file-fixer
+        name: Fix end of files
+        description: Thêm newline cuối file nếu thiếu
+
+      # Kiểm tra private keys không được commit
+      - id: detect-private-key
+        name: Detect private keys
+        description: Phát hiện private keys, certificates trong code
+
+  # =============================================================================
+  # DOCKER & INFRASTRUCTURE
+  # =============================================================================
+
+  - repo: https://github.com/hadolint/hadolint
+    rev: v2.12.0
+    hooks:
+      - id: hadolint-docker
+        name: Hadolint Dockerfile linter
+        description: Kiểm tra best practices trong Dockerfile
+        files: Dockerfile.*
+
+  # =============================================================================
+  # SQL QUALITY
+  # =============================================================================
+
+  - repo: https://github.com/sqlfluff/sqlfluff
+    rev: 2.3.5
+    hooks:
+      - id: sqlfluff-lint
+        name: SQLFluff SQL linter
+        description: Kiểm tra cú pháp và style SQL files
+        files: \.sql$
+        args: [--dialect=postgres]
+
+      - id: sqlfluff-fix
+        name: SQLFluff SQL formatter
+        description: Tự động format SQL files
+        files: \.sql$
+        args: [--dialect=postgres, --force]
+
+  # =============================================================================
+  # SECURITY CHECKS
+  # =============================================================================
+
+  - repo: https://github.com/pycqa/bandit
+    rev: 1.7.5
+    hooks:
+      - id: bandit
+        name: Bandit security linter
+        description: Quét lỗ hổng bảo mật trong Python code
+        args: [-r, --skip=B101,B601]
+        files: \.py$
+        exclude: ^(tests/|.*/tests/)
+
+# =============================================================================
+# GLOBAL CONFIGURATION
+# =============================================================================
+
+# Loại trừ các files/folders không cần check
+exclude: |
+  (?x)^(
+    \.git/.*|
+    \.venv/.*|
+    venv/.*|
+    node_modules/.*|
+    \.pytest_cache/.*|
+    __pycache__/.*|
+    \.mypy_cache/.*|
+    build/.*|
+    dist/.*|
+    \.next/.*|
+    uploads/.*|
+    logs/.*|
+    migrations/.*|
+    htmlcov/.*
+  )$
+
+# Fail fast - dừng ngay khi có lỗi đầu tiên
+fail_fast: false
+
+# Minimum version của pre-commit
+minimum_pre_commit_version: 3.0.0
+
+# Default language version
+default_language_version:
+  python: python3.11
+
+# Default stages to run
+default_stages: [pre-commit]
+
+# CI configuration
+ci:
+  autofix_commit_msg: |
+    [pre-commit.ci] auto fixes from pre-commit hooks
+  autofix_prs: true
+  autoupdate_schedule: weekly
+  skip: [pytest-unit]  # Skip pytest in CI, run in separate workflow

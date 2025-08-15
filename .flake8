@@ -1,0 +1,42 @@
+# Flake8 Configuration
+# File: .flake8
+# Cấu hình linter cho Python code quality
+
+[flake8]
+# Maximum line length (tương thích với Black)
+max-line-length = 88
+
+# Maximum complexity
+max-complexity = 10
+
+# Ignore specific error codes
+ignore =
+    E203,  # whitespace before ':' (conflicts with Black)
+    W503,  # line break before binary operator (conflicts with Black)
+    E501,  # line too long (handled by Black)
+    W504,  # line break after binary operator
+
+# Exclude directories
+exclude =
+    .git,
+    __pycache__,
+    .pytest_cache,
+    .mypy_cache,
+    venv,
+    .venv,
+    build,
+    dist,
+    migrations,
+    node_modules
+
+# Per-file ignores
+per-file-ignores =
+    */tests/*:S101,F401,D,
+    test_*.py:S101,F401,D,
+    __init__.py:F401,D104,
+    */migrations/*:E,W,F,D,N,
+
+# Show statistics
+statistics = True
+count = True
+show-source = True

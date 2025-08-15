@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Browser - Math Service Website</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }
+        .container { max-width: 1000px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { color: #2c3e50; text-align: center; }
+        .file-list { background: #f8f9fa; padding: 20px; border-radius: 5px; font-family: monospace; }
+        .file-item { padding: 8px; margin: 5px 0; background: white; border-left: 4px solid #007bff; border-radius: 3px; }
+        .file-category { font-weight: bold; color: #28a745; margin-top: 20px; margin-bottom: 10px; }
+        .back-link { text-align: center; margin: 20px 0; }
+        .back-link a { color: #007bff; text-decoration: none; padding: 10px 20px; background: #e9ecef; border-radius: 5px; }
+        .back-link a:hover { background: #dee2e6; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📁 File Browser - Math Service Website</h1>
+
+        <div class="back-link">
+            <a href="index.html">← Quay về trang chính</a>
+        </div>
+
+        <div class="file-list">
+            <div class="file-category">🐳 Docker & Infrastructure:</div>
+            <div class="file-item">./docker-compose.yml - Cấu hình toàn bộ hệ thống microservices</div>
+            <div class="file-item">./Dockerfile.fastapi - Template cho tất cả FastAPI services</div>
+            <div class="file-item">./requirements.txt - Python dependencies chung</div>
+
+            <div class="file-category">🖥️ Frontend (Next.js):</div>
+            <div class="file-item">./frontend/Dockerfile - Multi-stage build cho Next.js</div>
+            <div class="file-item">./frontend/package.json - Dependencies và scripts</div>
+            <div class="file-item">./frontend/next.config.js - API rewrites và CORS</div>
+            <div class="file-item">./frontend/tailwind.config.js - CSS framework config</div>
+            <div class="file-item">./frontend/tsconfig.json - TypeScript configuration</div>
+
+            <div class="file-category">🔧 Microservices (5 services):</div>
+            <div class="file-item">./services/user-service/Dockerfile + requirements.txt</div>
+            <div class="file-item">./services/payment-service/Dockerfile + requirements.txt</div>
+            <div class="file-item">./services/math-solver-service/Dockerfile + requirements.txt</div>
+            <div class="file-item">./services/content-service/Dockerfile + requirements.txt</div>
+            <div class="file-item">./services/admin-service/Dockerfile + requirements.txt</div>
+
+            <div class="file-category">🗄️ Database Schemas:</div>
+            <div class="file-item">./scripts/init-databases.sql - Khởi tạo 5 databases + UUID extension</div>
+            <div class="file-item">./scripts/user-service/init.sql - 4 tables: users, user_sessions, user_balance, user_roles</div>
+            <div class="file-item">./scripts/payment-service/init.sql - 4 tables: transactions, payment_methods, transaction_logs, balances</div>
+            <div class="file-item">./scripts/math-solver-service/init.sql - 4 tables: math_problems, solutions, solution_history, problem_statistics</div>
+
+            <div class="file-category">📊 Thống kê:</div>
+            <div class="file-item"><strong>Tổng cộng: 23 files đã được tạo</strong></div>
+            <div class="file-item">Docker files: 7 files</div>
+            <div class="file-item">Configuration files: 8 files</div>
+            <div class="file-item">Database scripts: 4 files</div>
+            <div class="file-item">Documentation: 4 files</div>
+        </div>
+
+        <div style="text-align: center; margin-top: 30px; color: #666;">
+            <p>🚀 Math Service Website - Microservices Architecture</p>
+            <p style="font-size: 12px;">FastAPI + Next.js + PostgreSQL + Redis</p>
+        </div>
+    </div>
+</body>
+</html>

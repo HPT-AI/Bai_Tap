@@ -1,0 +1,352 @@
+# Git Ignore File for Math Service Website
+# File: .gitignore
+# Ngăn không cho commit các files nhạy cảm và không cần thiết
+
+# =============================================================================
+# ENVIRONMENT VARIABLES & SECRETS
+# =============================================================================
+
+# Environment files chứa secrets
+.env
+.env.local
+.env.development
+.env.staging
+.env.production
+.env.*.local
+
+# API Keys và Secrets
+secrets/
+*.key
+*.pem
+*.p12
+*.pfx
+config/secrets.json
+config/credentials.json
+
+# =============================================================================
+# DEPENDENCIES & PACKAGES
+# =============================================================================
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environment
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.venv/
+.virtualenv/
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+
+# Package managers
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# =============================================================================
+# LOGS & TEMPORARY FILES
+# =============================================================================
+
+# Log files
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+.nyc_output/
+
+# Temporary folders
+tmp/
+temp/
+.tmp/
+.temp/
+
+# =============================================================================
+# DATABASE & CACHE
+# =============================================================================
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+
+# Redis dump files
+dump.rdb
+appendonly.aof
+
+# PostgreSQL
+*.sql.backup
+*.dump
+
+# =============================================================================
+# DEVELOPMENT TOOLS
+# =============================================================================
+
+# IDE & Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# JetBrains IDEs
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Visual Studio Code
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# =============================================================================
+# BUILD & DEPLOYMENT
+# =============================================================================
+
+# Next.js build output
+.next/
+out/
+build/
+dist/
+
+# React build
+build/
+dist/
+
+# Static files
+static/uploads/
+uploads/
+media/
+
+# Docker
+.dockerignore.bak
+docker-compose.override.yml
+
+# Kubernetes
+*.kubeconfig
+
+# =============================================================================
+# TESTING
+# =============================================================================
+
+# Test coverage
+coverage/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.pytest_cache/
+.cache/
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+
+# Jest
+jest.config.js.bak
+
+# =============================================================================
+# OPERATING SYSTEM
+# =============================================================================
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# =============================================================================
+# CLOUD & DEPLOYMENT
+# =============================================================================
+
+# AWS
+.aws/
+aws-exports.js
+
+# Google Cloud
+.gcloud/
+gcloud-service-key.json
+
+# Heroku
+.heroku/
+
+# Vercel
+.vercel/
+
+# Netlify
+.netlify/
+
+# =============================================================================
+# MONITORING & ANALYTICS
+# =============================================================================
+
+# Monitoring data
+prometheus/
+grafana/data/
+elasticsearch/data/
+
+# Analytics
+.analytics/
+
+# =============================================================================
+# BACKUP & ARCHIVE
+# =============================================================================
+
+# Backup files
+*.bak
+*.backup
+*.old
+*.orig
+*.save
+*.swp
+*.tmp
+
+# Archive files
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.rar
+*.7z
+
+# =============================================================================
+# CUSTOM PROJECT FILES
+# =============================================================================
+
+# User uploads
+uploads/user-avatars/
+uploads/documents/
+uploads/temp/
+
+# Generated documentation
+docs/build/
+docs/_build/
+
+# Local development files
+local-config.json
+dev-notes.md
+TODO-private.md
+
+# Performance testing
+performance-results/
+load-test-results/
+
+# Migration backups
+migrations/backup/
+
+# SSL Certificates (development)
+ssl/
+certificates/
+*.crt
+*.csr
+
+# =============================================================================
+# COMMENTS & NOTES
+# =============================================================================
+
+# Các files này KHÔNG nên commit vào Git:
+# 1. .env files - chứa secrets và passwords
+# 2. node_modules/ - quá lớn, có thể rebuild từ package.json
+# 3. build/dist/ - generated files, có thể rebuild
+# 4. logs/ - files log không cần thiết trong repo
+# 5. uploads/ - user-generated content
+# 6. IDE configs - mỗi developer có preference khác nhau
+# 7. OS files - .DS_Store, Thumbs.db không liên quan đến code
+# 8. Database files - chứa data thực, không phù hợp với Git
+# 9. SSL certificates - nhạy cảm về bảo mật
+# 10. Backup files - temporary và không cần thiết
+
+# Lưu ý: File .env.example SẼ được commit vì nó là template

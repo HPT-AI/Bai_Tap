@@ -1,0 +1,186 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15
+    container_name: math_service_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres123
+      POSTGRES_DB: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./scripts/init-databases.sql:/docker-entrypoint-initdb.d/init-databases.sql
+    networks:
+      - backend-network
+    restart: unless-stopped
+
+  # Redis Cache and Message Queue
+  redis:
+    image: redis:7-alpine
+    container_name: math_service_redis
+    command: redis-server --requirepass redis123
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - backend-network
+    restart: unless-stopped
+
+  # User Service (Port 8001)
+  user-service:
+    build:
+      context: ./services/user-service
+      dockerfile: Dockerfile
+    container_name: math_service_user
+    ports:
+      - "8001:8000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres123@postgres:5432/user_service_db
+      - REDIS_URL=redis://:redis123@redis:6379/0
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-your-secret-key-here}
+      - JWT_REFRESH_SECRET_KEY=${JWT_REFRESH_SECRET_KEY:-your-refresh-secret-key-here}
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - backend-network
+      - frontend-network
+    restart: unless-stopped
+
+  # Payment Service (Port 8002)
+  payment-service:
+    build:
+      context: ./services/payment-service
+      dockerfile: Dockerfile
+    container_name: math_service_payment
+    ports:
+      - "8002:8000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres123@postgres:5432/payment_service_db
+      - REDIS_URL=redis://:redis123@redis:6379/1
+      - VNPAY_API_KEY=${VNPAY_API_KEY:-your-vnpay-key}
+      - MOMO_API_KEY=${MOMO_API_KEY:-your-momo-key}
+      - USER_SERVICE_URL=http://user-service:8000
+    depends_on:
+      - postgres
+      - redis
+      - user-service
+    networks:
+      - backend-network
+      - frontend-network
+    restart: unless-stopped
+
+  # Math Solver Service (Port 8003)
+  math-solver-service:
+    build:
+      context: ./services/math-solver-service
+      dockerfile: Dockerfile
+    container_name: math_service_math_solver
+    ports:
+      - "8003:8000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres123@postgres:5432/math_solver_db
+      - REDIS_URL=redis://:redis123@redis:6379/2
+      - USER_SERVICE_URL=http://user-service:8000
+      - PAYMENT_SERVICE_URL=http://payment-service:8000
+    depends_on:
+      - postgres
+      - redis
+      - user-service
+      - payment-service
+    networks:
+      - backend-network
+      - frontend-network
+    restart: unless-stopped
+
+  # Content Service (Port 8004)
+  content-service:
+    build:
+      context: ./services/content-service
+      dockerfile: Dockerfile
+    container_name: math_service_content
+    ports:
+      - "8004:8000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres123@postgres:5432/content_service_db
+      - REDIS_URL=redis://:redis123@redis:6379/3
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - backend-network
+      - frontend-network
+    restart: unless-stopped
+
+  # Admin Service (Port 8005)
+  admin-service:
+    build:
+      context: ./services/admin-service
+      dockerfile: Dockerfile
+    container_name: math_service_admin
+    ports:
+      - "8005:8000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres123@postgres:5432/admin_service_db
+      - REDIS_URL=redis://:redis123@redis:6379/4
+      - USER_SERVICE_URL=http://user-service:8000
+      - PAYMENT_SERVICE_URL=http://payment-service:8000
+      - MATH_SOLVER_SERVICE_URL=http://math-solver-service:8000
+      - CONTENT_SERVICE_URL=http://content-service:8000
+    depends_on:
+      - postgres
+      - redis
+      - user-service
+      - payment-service
+      - math-solver-service
+      - content-service
+    networks:
+      - backend-network
+      - frontend-network
+    restart: unless-stopped
+
+  # Next.js Frontend (Port 3000)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: math_service_frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8001
+      - NEXT_PUBLIC_USER_SERVICE_URL=http://localhost:8001
+      - NEXT_PUBLIC_PAYMENT_SERVICE_URL=http://localhost:8002
+      - NEXT_PUBLIC_MATH_SOLVER_SERVICE_URL=http://localhost:8003
+      - NEXT_PUBLIC_CONTENT_SERVICE_URL=http://localhost:8004
+      - NEXT_PUBLIC_ADMIN_SERVICE_URL=http://localhost:8005
+    depends_on:
+      - user-service
+      - payment-service
+      - math-solver-service
+      - content-service
+      - admin-service
+    networks:
+      - frontend-network
+    restart: unless-stopped
+
+# Networks
+networks:
+  backend-network:
+    driver: bridge
+    name: math_service_backend
+  frontend-network:
+    driver: bridge
+    name: math_service_frontend
+
+# Volumes
+volumes:
+  postgres-data:
+    name: math_service_postgres_data
+  redis-data:
+    name: math_service_redis_data
