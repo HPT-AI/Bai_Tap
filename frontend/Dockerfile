@@ -47,4 +47,4 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
 # Start the application
-CMD ["node", "server.js"]
+CMD ["npm", "start"]
