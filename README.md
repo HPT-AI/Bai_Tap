@@ -232,5 +232,5 @@ Tự động chạy khi commit:
 Copyright © 2024 Math Service Team. All rights reserved.
 
 ---
-
+Dự án này được cập nhật bởi Manus AI.
 **Happy Coding! 🎉**
