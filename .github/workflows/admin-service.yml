@@ -133,97 +133,12 @@ jobs:
     - name: Run admin security tests
       run: |
         echo "🔐 Testing admin security features..."
-        python -c "
-import hashlib
-import secrets
-import jwt
-from datetime import datetime, timedelta
+        python -c "import hashlib; import secrets; import jwt; from datetime import datetime, timedelta; def hash_password(password): salt = secrets.token_hex(16); hashed = hashlib.pbkdf2_hmac('sha256', password.encode(), salt.encode(), 100000); return salt + hashed.hex(); def verify_password(password, stored_hash): salt = stored_hash[:32]; stored_password = stored_hash[32:]; hashed = hashlib.pbkdf2_hmac('sha256', password.encode(), salt.encode(), 100000); return hashed.hex() == stored_password; test_password = 'TestAdminPassword123!'; hashed = hash_password(test_password); is_valid = verify_password(test_password, hashed); print(f'✅ Admin password hashing test: {is_valid}'); def generate_admin_token(admin_id, secret_key): payload = {'admin_id': admin_id, 'role': 'admin', 'exp': datetime.utcnow() + timedelta(hours=1), 'iat': datetime.utcnow(), 'is_admin': True}; return jwt.encode(payload, secret_key, algorithm='HS256'); admin_token = generate_admin_token(1, 'test-secret'); print(f'✅ Admin JWT generation test: {len(admin_token) > 0}'); def check_admin_permission(user_role, required_role): role_hierarchy = {'super_admin': 3, 'admin': 2, 'moderator': 1, 'user': 0}; return role_hierarchy.get(user_role, 0) >= role_hierarchy.get(required_role, 0); test_cases = [('super_admin', 'admin', True), ('admin', 'moderator', True), ('moderator', 'admin', False), ('user', 'admin', False)]; for user_role, required_role, expected in test_cases: result = check_admin_permission(user_role, required_role); print(f'✅ RBAC test {user_role} -> {required_role}: {result == expected}')"
 
-# Test password hashing
-def hash_password(password):
-    salt = secrets.token_hex(16)
-    hashed = hashlib.pbkdf2_hmac('sha256', password.encode(), salt.encode(), 100000)
-    return salt + hashed.hex()
-
-def verify_password(password, stored_hash):
-    salt = stored_hash[:32]
-    stored_password = stored_hash[32:]
-    hashed = hashlib.pbkdf2_hmac('sha256', password.encode(), salt.encode(), 100000)
-    return hashed.hex() == stored_password
-
-# Test admin password security
-test_password = 'TestAdminPassword123!'
-hashed = hash_password(test_password)
-is_valid = verify_password(test_password, hashed)
-print(f'✅ Admin password hashing test: {is_valid}')
-
-# Test JWT token generation for admin
-def generate_admin_token(admin_id, secret_key):
-    payload = {
-        'admin_id': admin_id,
-        'role': 'admin',
-        'exp': datetime.utcnow() + timedelta(hours=1),
-        'iat': datetime.utcnow(),
-        'is_admin': True
-    }
-    return jwt.encode(payload, secret_key, algorithm='HS256')
-
-admin_token = generate_admin_token(1, 'test-secret')
-print(f'✅ Admin JWT generation test: {len(admin_token) > 0}')
-
-# Test role-based access control
-def check_admin_permission(user_role, required_role):
-    role_hierarchy = {
-        'super_admin': 3,
-        'admin': 2,
-        'moderator': 1,
-        'user': 0
-    }
-    return role_hierarchy.get(user_role, 0) >= role_hierarchy.get(required_role, 0)
-
-test_cases = [
-    ('super_admin', 'admin', True),
-    ('admin', 'moderator', True),
-    ('moderator', 'admin', False),
-    ('user', 'admin', False)
-]
-
-for user_role, required_role, expected in test_cases:
-    result = check_admin_permission(user_role, required_role)
-    print(f'✅ RBAC test {user_role} -> {required_role}: {result == expected}')
-"
-
-    - name: Run audit logging tests
+    - name: Test audit logging functionality
       run: |
         echo "📊 Testing audit logging functionality..."
-        python -c "
-import json
-from datetime import datetime
-
-# Test audit log structure
-def create_audit_log(action, user_id, resource, details=None):
-    return {
-        'timestamp': datetime.utcnow().isoformat(),
-        'action': action,
-        'user_id': user_id,
-        'resource': resource,
-        'details': details or {},
-        'ip_address': '127.0.0.1',
-        'user_agent': 'test-agent'
-    }
-
-# Test various admin actions
-audit_actions = [
-    ('user_created', 1, 'users', {'user_id': 123}),
-    ('user_deleted', 1, 'users', {'user_id': 123}),
-    ('payment_refunded', 1, 'payments', {'payment_id': 456, 'amount': 100000}),
-    ('system_config_changed', 1, 'config', {'setting': 'max_users', 'old_value': 1000, 'new_value': 2000})
-]
-
-for action, user_id, resource, details in audit_actions:
-    log_entry = create_audit_log(action, user_id, resource, details)
-    print(f'✅ Audit log test {action}: {len(json.dumps(log_entry)) > 0}')
-"
+        python -c "import json; from datetime import datetime; def create_audit_log(action, user_id, resource, details=None): return {'timestamp': datetime.utcnow().isoformat(), 'action': action, 'user_id': user_id, 'resource': resource, 'details': details or {}, 'ip_address': '127.0.0.1', 'user_agent': 'test-agent'}; audit_actions = [('user_created', 1, 'users', {'user_id': 123}), ('user_deleted', 1, 'users', {'user_id': 123}), ('payment_refunded', 1, 'payments', {'payment_id': 456, 'amount': 100000}), ('system_config_changed', 1, 'config', {'setting': 'max_users', 'old_value': 1000, 'new_value': 2000})]; for action, user_id, resource, details in audit_actions: log_entry = create_audit_log(action, user_id, resource, details); print(f'✅ Audit log test {action}: {len(json.dumps(log_entry)) > 0}')"
 
     - name: Run tests
       run: |
@@ -299,3 +214,5 @@ for action, user_id, resource, details in audit_actions:
           org.opencontainers.image.title=Admin Service
           org.opencontainers.image.description=System administration and monitoring service
           org.opencontainers.image.vendor=Math Service
+
+
