@@ -73,7 +73,7 @@ jobs:
       uses: actions/cache@v3
       with:
         path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-math-${{ hashFiles('requirements.txt', 'requirements-dev.txt') }}
+        key: ${{ runner.os }}-pip-math-${{ hashFiles("requirements.txt", "requirements-dev.txt") }}
         restore-keys: |
           ${{ runner.os }}-pip-math-
           ${{ runner.os }}-pip-
@@ -137,58 +137,12 @@ jobs:
     - name: Run math solver algorithm tests
       run: |
         echo "🧮 Testing core math algorithms..."
-        # Test basic math operations
-        python -c "
-import sympy as sp
-from sympy import symbols, solve, diff, integrate, simplify
-
-# Test symbolic math capabilities
-x = symbols('x')
-eq = x**2 - 4
-solutions = solve(eq, x)
-print(f'✅ Quadratic solver test: {solutions}')
-
-# Test calculus
-expr = x**3 + 2*x**2 + x
-derivative = diff(expr, x)
-integral = integrate(expr, x)
-print(f'✅ Calculus test: derivative={derivative}, integral={integral}')
-
-# Test system of equations
-y = symbols('y')
-eq1 = x + y - 5
-eq2 = x - y - 1
-system_solution = solve([eq1, eq2], [x, y])
-print(f'✅ System solver test: {system_solution}')
-"
+        python -c "import sympy as sp; from sympy import symbols, solve, diff, integrate, simplify; x = symbols(\'x\'); eq = x**2 - 4; solutions = solve(eq, x); print(f\'✅ Quadratic solver test: {solutions}\'); expr = x**3 + 2*x**2 + x; derivative = diff(expr, x); integral = integrate(expr, x); print(f\'✅ Calculus test: derivative={derivative}, integral={integral}\'); y = symbols(\'y\'); eq1 = x + y - 5; eq2 = x - y - 1; system_solution = solve([eq1, eq2], [x, y]); print(f\'✅ System solver test: {system_solution}\')"
 
     - name: Run performance benchmarks
       run: |
         echo "⚡ Running performance benchmarks..."
-        python -c "
-import time
-import sympy as sp
-from sympy import symbols, solve
-
-# Benchmark quadratic equations
-x = symbols('x')
-start_time = time.time()
-for i in range(100):
-    eq = x**2 + i*x + (i+1)
-    solutions = solve(eq, x)
-end_time = time.time()
-print(f'✅ Quadratic benchmark: {end_time - start_time:.3f}s for 100 equations')
-
-# Benchmark system of equations
-x, y = symbols('x y')
-start_time = time.time()
-for i in range(50):
-    eq1 = x + y - (i+1)
-    eq2 = x - y - i
-    solutions = solve([eq1, eq2], [x, y])
-end_time = time.time()
-print(f'✅ System benchmark: {end_time - start_time:.3f}s for 50 systems')
-"
+        python -c "import time; import sympy as sp; from sympy import symbols, solve; x = symbols(\'x\'); start_time = time.time(); for i in range(100): eq = x**2 + i*x + (i+1); solutions = solve(eq, x); end_time = time.time(); print(f\'✅ Quadratic benchmark: {end_time - start_time:.3f}s for 100 equations\'); x, y = symbols(\'x y\'); start_time = time.time(); for i in range(50): eq1 = x + y - (i+1); eq2 = x - y - i; solutions = solve([eq1, eq2], [x, y]); end_time = time.time(); print(f\'✅ System benchmark: {end_time - start_time:.3f}s for 50 systems\')"
 
     - name: Run tests
       run: |
@@ -254,12 +208,16 @@ print(f'✅ System benchmark: {end_time - start_time:.3f}s for 50 systems')
       id: meta
       uses: docker/metadata-action@v5
       with:
-        images: mathservice/${{ env.SERVICE_NAME }}
+        images: ${{ env.IMAGE_NAME }}
         tags: |
           type=ref,event=branch
           type=ref,event=pr
           type=sha,prefix={{branch}}-
           type=raw,value=latest,enable={{is_default_branch}}
+        labels: |
+          org.opencontainers.image.title=Math Solver Service
+          org.opencontainers.image.description=Mathematical computation and problem solving service
+          org.opencontainers.image.vendor=Math Service
 
     - name: Build and push Docker image
       uses: docker/build-push-action@v5
@@ -278,7 +236,7 @@ print(f'✅ System benchmark: {end_time - start_time:.3f}s for 50 systems')
     - name: Image vulnerability scan
       uses: aquasecurity/trivy-action@master
       with:
-        image-ref: mathservice/${{ env.SERVICE_NAME }}:latest
+        image-ref: ${{ env.IMAGE_NAME }}:latest
         format: 'sarif'
         output: 'trivy-results.sarif'
 
@@ -302,7 +260,7 @@ print(f'✅ System benchmark: {end_time - start_time:.3f}s for 50 systems')
     - name: Deploy to staging environment
       run: |
         echo "🚀 Deploying ${{ env.SERVICE_NAME }} to staging..."
-        echo "Image: mathservice/${{ env.SERVICE_NAME }}:${{ github.sha }}"
+        echo "Image: ${{ env.IMAGE_NAME }}:${{ github.sha }}"
         echo "Port: ${{ env.SERVICE_PORT }}"
 
         # Here would be actual deployment commands
@@ -475,3 +433,5 @@ print(f'✅ System benchmark: {end_time - start_time:.3f}s for 50 systems')
         echo "- **Performance:** ✅ Benchmarks passed" >> $GITHUB_STEP_SUMMARY
         echo "- **Capabilities:** Algebra, Calculus, Statistics, Geometry" >> $GITHUB_STEP_SUMMARY
         echo "- **Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+
+
