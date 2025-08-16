@@ -24,7 +24,7 @@ on:
 
 env:
   REGISTRY: docker.io
-  REGISTRY_NAMESPACE: mathservice
+  REGISTRY_NAMESPACE: hpt1976
 
 jobs:
   build-matrix:
@@ -205,3 +205,5 @@ jobs:
         echo "- Update \`docker-compose.yml\` with new image tags" >> $GITHUB_STEP_SUMMARY
         echo "- Deploy to staging environment" >> $GITHUB_STEP_SUMMARY
         echo "- Run integration tests" >> $GITHUB_STEP_SUMMARY
+
+

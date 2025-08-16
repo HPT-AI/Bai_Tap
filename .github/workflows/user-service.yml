@@ -18,7 +18,7 @@ env:
   PYTHON_VERSION: '3.11'
   REGISTRY: docker.io
   REGISTRY_NAMESPACE: mathservice
-  IMAGE_NAME: mathservice/user-service
+  IMAGE_NAME: hpt1976/user-service
 
 jobs:
   test:
@@ -165,7 +165,7 @@ jobs:
       id: meta
       uses: docker/metadata-action@v5
       with:
-        images: mathservice/${{ env.SERVICE_NAME }}
+        images: hpt1976/${{ env.SERVICE_NAME }}
         tags: |
           type=ref,event=branch
           type=ref,event=pr
@@ -189,7 +189,7 @@ jobs:
     - name: Image vulnerability scan
       uses: aquasecurity/trivy-action@master
       with:
-        image-ref: mathservice/${{ env.SERVICE_NAME }}:latest
+        image-ref: hpt1976/${{ env.SERVICE_NAME }}:latest
         format: 'sarif'
         output: 'trivy-results.sarif'
 
@@ -213,7 +213,7 @@ jobs:
     - name: Deploy to staging environment
       run: |
         echo "🚀 Deploying ${{ env.SERVICE_NAME }} to staging..."
-        echo "Image: mathservice/${{ env.SERVICE_NAME }}:${{ github.sha }}"
+        echo "Image: hpt1976/${{ env.SERVICE_NAME }}:${{ github.sha }}"
         echo "Port: ${{ env.SERVICE_PORT }}"
 
         # Here would be actual deployment commands
@@ -285,7 +285,7 @@ jobs:
         password: ${{ secrets.DOCKERHUB_TOKEN }}
 
     - name: Extract metadata
-
+      id: meta
       uses: docker/metadata-action@v5
       with:
         images: ${{ env.IMAGE_NAME }}
@@ -355,3 +355,5 @@ jobs:
         echo "- **Size:** $(docker images --format 'table {{.Size}}' ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} | tail -n1)" >> $GITHUB_STEP_SUMMARY
         echo "- **Created:** $(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> $GITHUB_STEP_SUMMARY
         echo "- **Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+
+

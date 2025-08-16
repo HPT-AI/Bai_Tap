@@ -17,7 +17,7 @@ env:
   SERVICE_PORT: 8003
   PYTHON_VERSION: '3.11'
   REGISTRY: docker.io
-  REGISTRY_NAMESPACE: mathservice
+  REGISTRY_NAMESPACE: hpt1976
   IMAGE_NAME: hpt1976/math-solver-service
 
 jobs:
@@ -136,13 +136,44 @@ jobs:
 
     - name: Run math solver algorithm tests
       run: |
-        echo "🧮 Testing core math algorithms..."
-        python -c "import sympy as sp; from sympy import symbols, solve, diff, integrate, simplify; x = symbols(\'x\'); eq = x**2 - 4; solutions = solve(eq, x); print(f\'✅ Quadratic solver test: {solutions}\'); expr = x**3 + 2*x**2 + x; derivative = diff(expr, x); integral = integrate(expr, x); print(f\'✅ Calculus test: derivative={derivative}, integral={integral}\'); y = symbols(\'y\'); eq1 = x + y - 5; eq2 = x - y - 1; system_solution = solve([eq1, eq2], [x, y]); print(f\'✅ System solver test: {system_solution}\')"
+        python -c "\
+          import sympy as sp; \
+          from sympy import symbols, solve, diff, integrate, simplify; \
+          x = symbols('x'); \
+          eq = x**2 - 4; \
+          solutions = solve(eq, x); \
+          print(f'✅ Quadratic solver test: {solutions}'); \
+          expr = x**3 + 2*x**2 + x; \
+          derivative = diff(expr, x); \
+          integral = integrate(expr, x); \
+          print(f'✅ Calculus test: derivative={derivative}, integral={integral}'); \
+          y = symbols('y'); \
+          eq1 = x + y - 5; \
+          eq2 = x - y - 1; \
+          system_solution = solve([eq1, eq2], [x, y]); \
+          print(f'✅ System solver test: {system_solution}')"
 
     - name: Run performance benchmarks
       run: |
-        echo "⚡ Running performance benchmarks..."
-        python -c "import time; import sympy as sp; from sympy import symbols, solve; x = symbols(\'x\'); start_time = time.time(); for i in range(100): eq = x**2 + i*x + (i+1); solutions = solve(eq, x); end_time = time.time(); print(f\'✅ Quadratic benchmark: {end_time - start_time:.3f}s for 100 equations\'); x, y = symbols(\'x y\'); start_time = time.time(); for i in range(50): eq1 = x + y - (i+1); eq2 = x - y - i; solutions = solve([eq1, eq2], [x, y]); end_time = time.time(); print(f\'✅ System benchmark: {end_time - start_time:.3f}s for 50 systems\')"
+        python -c "\
+          import time; \
+          import sympy as sp; \
+          from sympy import symbols, solve; \
+          x = symbols('x'); \
+          start_time = time.time(); \
+          for i in range(100): \
+            eq = x**2 + i*x + (i+1); \
+            solutions = solve(eq, x); \
+          end_time = time.time(); \
+          print(f'✅ Quadratic benchmark: {end_time - start_time:.3f}s for 100 equations'); \
+          x, y = symbols('x y'); \
+          start_time = time.time(); \
+          for i in range(50): \
+            eq1 = x + y - (i+1); \
+            eq2 = x - y - i; \
+            solutions = solve([eq1, eq2], [x, y]); \
+          end_time = time.time(); \
+          print(f'✅ System benchmark: {end_time - start_time:.3f}s for 50 systems')"
 
     - name: Run tests
       run: |
@@ -224,146 +255,6 @@ jobs:
       with:
         context: ./services/${{ env.SERVICE_NAME }}
         file: ./services/${{ env.SERVICE_NAME }}/Dockerfile
-        push: true
-        tags: ${{ steps.meta.outputs.tags }}
-        labels: ${{ steps.meta.outputs.labels }}
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
-        build-args: |
-          SERVICE_NAME=${{ env.SERVICE_NAME }}
-          SERVICE_PORT=${{ env.SERVICE_PORT }}
-
-    - name: Image vulnerability scan
-      uses: aquasecurity/trivy-action@master
-      with:
-        image-ref: ${{ env.IMAGE_NAME }}:latest
-        format: 'sarif'
-        output: 'trivy-results.sarif'
-
-    - name: Upload Trivy scan results
-      uses: github/codeql-action/upload-sarif@v2
-      if: always()
-      with:
-        sarif_file: 'trivy-results.sarif'
-
-  deploy-staging:
-    name: Deploy to Staging
-    runs-on: ubuntu-latest
-    needs: build
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    environment: staging
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Deploy to staging environment
-      run: |
-        echo "🚀 Deploying ${{ env.SERVICE_NAME }} to staging..."
-        echo "Image: ${{ env.IMAGE_NAME }}:${{ github.sha }}"
-        echo "Port: ${{ env.SERVICE_PORT }}"
-
-        # Here would be actual deployment commands
-        # For example: kubectl, docker-compose, or cloud deployment
-        echo "✅ Deployment to staging completed"
-
-    - name: Run health check
-      run: |
-        echo "🔍 Running health check for ${{ env.SERVICE_NAME }}..."
-        # Here would be actual health check commands
-        # For example: curl http://staging-url/health
-        echo "✅ Health check passed"
-
-    - name: Run math solver integration tests
-      run: |
-        echo "🧮 Testing math solver functionality..."
-        # Here would be integration tests for math solving
-        # Test quadratic equations, systems, calculus operations
-        echo "✅ Math solver integration tests passed"
-
-    - name: Run performance tests
-      run: |
-        echo "⚡ Running performance tests for ${{ env.SERVICE_NAME }}..."
-        # Here would be performance test commands
-        # Test response times for different problem types
-        echo "✅ Performance tests passed"
-
-  notify:
-    name: Notify Team
-    runs-on: ubuntu-latest
-    needs: [test, build, deploy-staging]
-    if: always()
-
-    steps:
-    - name: Notify on success
-      if: needs.test.result == 'success' && needs.build.result == 'success'
-      run: |
-        echo "✅ Math Solver Service CI/CD completed successfully!"
-        echo "- Tests: ✅ Passed"
-        echo "- Build: ✅ Completed"
-        echo "- Deploy: ✅ Staging updated"
-        echo "- Math Accuracy: ✅ Validated"
-        echo "- Performance: ✅ Benchmarked"
-
-    - name: Notify on failure
-      if: needs.test.result == 'failure' || needs.build.result == 'failure'
-      run: |
-        echo "❌ Math Solver Service CI/CD failed!"
-        echo "- Tests: ${{ needs.test.result }}"
-        echo "- Build: ${{ needs.build.result }}"
-        echo "- Deploy: ${{ needs.deploy-staging.result }}"
-        echo "⚠️ Math solver deployment blocked due to failures"
-        exit 1
-
-
-  build-docker:
-    name: Build Docker Image
-    runs-on: ubuntu-latest
-    needs: test
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-
-    permissions:
-      contents: read
-      packages: write
-
-    outputs:
-      image-digest: ${{ steps.build.outputs.digest }}
-      image-tag: ${{ steps.meta.outputs.tags }}
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-
-    - name: Log in to Docker Hub
-      uses: docker/login-action@v3
-      with:
-        username: ${{ secrets.DOCKERHUB_USERNAME }}
-        password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-    - name: Extract metadata
-      id: meta
-      uses: docker/metadata-action@v5
-      with:
-        images: ${{ env.IMAGE_NAME }}
-        tags: |
-          type=ref,event=branch
-          type=ref,event=pr
-          type=sha,prefix={{branch}}-
-          type=raw,value=latest,enable={{is_default_branch}}
-        labels: |
-          org.opencontainers.image.title=Math Solver Service
-          org.opencontainers.image.description=Mathematical computation and problem solving service
-          org.opencontainers.image.vendor=Math Service
-
-    - name: Build and push Docker image
-      id: build
-      uses: docker/build-push-action@v5
-      with:
-        context: ./services/math-solver-service
-        file: ./services/math-solver-service/Dockerfile
         push: true
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}

@@ -253,21 +253,23 @@ jobs:
         echo "## 🎉 Docker Hub Registry Setup Complete" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "**Registry:** \`docker.io\`" >> $GITHUB_STEP_SUMMARY
-        echo "**Organization:** \`mathservice\`" >> $GITHUB_STEP_SUMMARY
+        echo "**Organization:** \`hpt1976\`" >> $GITHUB_STEP_SUMMARY
         echo "**Repositories Created:** 6" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "### 📦 Available Repositories:" >> $GITHUB_STEP_SUMMARY
         echo "| Service | Repository | Port | Status |" >> $GITHUB_STEP_SUMMARY
         echo "|---------|------------|------|--------|" >> $GITHUB_STEP_SUMMARY
-        echo "| User Service | \`mathservice/user-service\` | 8001 | ✅ Ready |" >> $GITHUB_STEP_SUMMARY
-        echo "| Payment Service | \`mathservice/payment-service\` | 8002 | ✅ Ready |" >> $GITHUB_STEP_SUMMARY
-        echo "| Math Solver | \`mathservice/math-solver-service\` | 8003 | ✅ Ready |" >> $GITHUB_STEP_SUMMARY
-        echo "| Content Service | \`mathservice/content-service\` | 8004 | ✅ Ready |" >> $GITHUB_STEP_SUMMARY
-        echo "| Admin Service | \`mathservice/admin-service\` | 8005 | ✅ Ready |" >> $GITHUB_STEP_SUMMARY
-        echo "| Frontend | \`mathservice/frontend\` | 3000 | ✅ Ready |" >> $GITHUB_STEP_SUMMARY
+        echo "| User Service | \`hpt1976/user-service\` | 8001 | ✅ Ready |" >> $GITHUB_STEP_SUMMARY
+        echo "| Payment Service | \`hpt1976/payment-service\` | 8002 | ✅ Ready |" >> $GITHUB_STEP_SUMMARY
+        echo "| Math Solver | \`hpt1976/math-solver-service\` | 8003 | ✅ Ready |" >> $GITHUB_STEP_SUMMARY
+        echo "| Content Service | \`hpt1976/content-service\` | 8004 | ✅ Ready |" >> $GITHUB_STEP_SUMMARY
+        echo "| Admin Service | \`hpt1976/admin-service\` | 8005 | ✅ Ready |" >> $GITHUB_STEP_SUMMARY
+        echo "| Frontend | \`hpt1976/frontend\` | 3000 | ✅ Ready |" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "### 🔧 Next Steps:" >> $GITHUB_STEP_SUMMARY
         echo "1. Update GitHub Actions workflows to use Docker Hub" >> $GITHUB_STEP_SUMMARY
         echo "2. Test automated pushing with \`test-push\` action" >> $GITHUB_STEP_SUMMARY
         echo "3. Update docker-compose.yml files" >> $GITHUB_STEP_SUMMARY
         echo "4. Update documentation with new image URLs" >> $GITHUB_STEP_SUMMARY
+
+

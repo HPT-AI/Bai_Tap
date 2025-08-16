@@ -17,7 +17,7 @@ env:
   SERVICE_PORT: 3000
   NODE_VERSION: '20'
   REGISTRY: docker.io
-  REGISTRY_NAMESPACE: mathservice
+  REGISTRY_NAMESPACE: hpt1976
   IMAGE_NAME: hpt1976/frontend
 
 jobs:
@@ -130,7 +130,7 @@ jobs:
 
         # Display performance score
         if [ -f lighthouse-report.json ]; then
-          PERFORMANCE_SCORE=$(node -e "console.log(JSON.parse(require('fs').readFileSync('lighthouse-report.json')).categories.performance.score * 100)")
+          PERFORMANCE_SCORE=$(node -e "console.log(JSON.parse(require(\'fs\').readFileSync(\'lighthouse-report.json\')).categories.performance.score * 100)")
           echo "✅ Performance Score: $PERFORMANCE_SCORE/100"
         fi
 
@@ -150,6 +150,8 @@ jobs:
 
         # Build and start the application
         npm run build
+
+        # Start the application in background
         npm start &
         APP_PID=$!
 
@@ -234,176 +236,6 @@ jobs:
       id: meta
       uses: docker/metadata-action@v5
       with:
-        images: mathservice/${{ env.SERVICE_NAME }}
-        tags: |
-          type=ref,event=branch
-          type=ref,event=pr
-          type=sha,prefix={{branch}}-
-          type=raw,value=latest,enable={{is_default_branch}}
-
-    - name: Build and push Docker image
-      uses: docker/build-push-action@v5
-      with:
-        context: ./frontend
-        file: ./frontend/Dockerfile
-        push: true
-        tags: ${{ steps.meta.outputs.tags }}
-        labels: ${{ steps.meta.outputs.labels }}
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
-        build-args: |
-          SERVICE_NAME=${{ env.SERVICE_NAME }}
-          SERVICE_PORT=${{ env.SERVICE_PORT }}
-
-    - name: Image vulnerability scan
-      uses: aquasecurity/trivy-action@master
-      with:
-        image-ref: mathservice/${{ env.SERVICE_NAME }}:latest
-        format: 'sarif'
-        output: 'trivy-results.sarif'
-
-    - name: Upload Trivy scan results
-      uses: github/codeql-action/upload-sarif@v2
-      if: always()
-      with:
-        sarif_file: 'trivy-results.sarif'
-
-  deploy-staging:
-    name: Deploy to Staging
-    runs-on: ubuntu-latest
-    needs: build
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    environment: staging
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Deploy to staging environment
-      run: |
-        echo "🚀 Deploying ${{ env.SERVICE_NAME }} to staging..."
-        echo "Image: mathservice/${{ env.SERVICE_NAME }}:${{ github.sha }}"
-        echo "Port: ${{ env.SERVICE_PORT }}"
-
-        # Here would be actual deployment commands
-        # For example: kubectl, docker-compose, or cloud deployment
-        echo "✅ Deployment to staging completed"
-
-    - name: Run health check
-      run: |
-        echo "🔍 Running health check for ${{ env.SERVICE_NAME }}..."
-        # Here would be actual health check commands
-        # For example: curl http://staging-url/
-        echo "✅ Health check passed"
-
-    - name: Run smoke tests
-      run: |
-        echo "💨 Running smoke tests for frontend..."
-        # Here would be smoke tests
-        # Test critical user journeys, page loads, API connectivity
-        echo "✅ Smoke tests passed"
-
-    - name: Run cross-browser tests
-      run: |
-        echo "🌐 Running cross-browser compatibility tests..."
-        # Here would be cross-browser tests
-        # Test on Chrome, Firefox, Safari, Edge
-        echo "✅ Cross-browser tests passed"
-
-  deploy-production:
-    name: Deploy to Production
-    runs-on: ubuntu-latest
-    needs: deploy-staging
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    environment: production
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Deploy to production environment
-      run: |
-        echo "🚀 Deploying ${{ env.SERVICE_NAME }} to production..."
-        echo "Image: mathservice/${{ env.SERVICE_NAME }}:${{ github.sha }}"
-        echo "Port: ${{ env.SERVICE_PORT }}"
-
-        # Here would be actual production deployment commands
-        # For example: kubectl, docker-compose, or cloud deployment
-        echo "✅ Production deployment completed"
-
-    - name: Run production health check
-      run: |
-        echo "🔍 Running production health check..."
-        # Here would be production health check commands
-        echo "✅ Production health check passed"
-
-    - name: Run production smoke tests
-      run: |
-        echo "💨 Running production smoke tests..."
-        # Here would be production smoke tests
-        echo "✅ Production smoke tests passed"
-
-  notify:
-    name: Notify Team
-    runs-on: ubuntu-latest
-    needs: [test, build, deploy-staging, deploy-production]
-    if: always()
-
-    steps:
-    - name: Notify on success
-      if: needs.test.result == 'success' && needs.build.result == 'success'
-      run: |
-        echo "✅ Frontend CI/CD completed successfully!"
-        echo "- Tests: ✅ Passed"
-        echo "- Build: ✅ Completed"
-        echo "- Deploy Staging: ✅ ${{ needs.deploy-staging.result }}"
-        echo "- Deploy Production: ✅ ${{ needs.deploy-production.result }}"
-        echo "- Performance: ✅ Validated"
-        echo "- Accessibility: ✅ Checked"
-
-    - name: Notify on failure
-      if: needs.test.result == 'failure' || needs.build.result == 'failure'
-      run: |
-        echo "❌ Frontend CI/CD failed!"
-        echo "- Tests: ${{ needs.test.result }}"
-        echo "- Build: ${{ needs.build.result }}"
-        echo "- Deploy Staging: ${{ needs.deploy-staging.result }}"
-        echo "- Deploy Production: ${{ needs.deploy-production.result }}"
-        echo "⚠️ Frontend deployment blocked due to failures"
-        exit 1
-
-
-  build-docker:
-    name: Build Docker Image
-    runs-on: ubuntu-latest
-    needs: test
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-
-    permissions:
-      contents: read
-      packages: write
-
-    outputs:
-      image-digest: ${{ steps.build.outputs.digest }}
-      image-tag: ${{ steps.meta.outputs.tags }}
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-
-    - name: Log in to Docker Hub
-      uses: docker/login-action@v3
-      with:
-        username: ${{ secrets.DOCKERHUB_USERNAME }}
-        password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-    - name: Extract metadata
-      id: meta
-      uses: docker/metadata-action@v5
-      with:
         images: ${{ env.IMAGE_NAME }}
         tags: |
           type=ref,event=branch
@@ -416,7 +248,6 @@ jobs:
           org.opencontainers.image.vendor=Math Service
 
     - name: Build and push Docker image
-      id: build
       uses: docker/build-push-action@v5
       with:
         context: ./frontend
@@ -494,11 +325,7 @@ jobs:
         echo "**Tags:** \`${{ steps.meta.outputs.tags }}\`" >> $GITHUB_STEP_SUMMARY
         echo "**Digest:** \`${{ steps.build.outputs.digest }}\`" >> $GITHUB_STEP_SUMMARY
         echo "**Platforms:** linux/amd64, linux/arm64" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### ⚛️ Frontend Specific" >> $GITHUB_STEP_SUMMARY
-        echo "- **Framework:** Next.js 14 with TypeScript" >> $GITHUB_STEP_SUMMARY
-        echo "- **Styling:** Tailwind CSS" >> $GITHUB_STEP_SUMMARY
-        echo "- **Security:** ✅ XSS, CSRF, CSP protection" >> $GITHUB_STEP_SUMMARY
-        echo "- **Performance:** ✅ Bundle optimization, lazy loading" >> $GITHUB_STEP_SUMMARY
-        echo "- **SEO:** ✅ Meta tags, semantic HTML, accessibility" >> $GITHUB_STEP_SUMMARY
-        echo "- **Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+
+
+
+

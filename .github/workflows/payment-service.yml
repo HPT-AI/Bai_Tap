@@ -17,7 +17,7 @@ env:
   SERVICE_PORT: 8002
   PYTHON_VERSION: '3.11'
   REGISTRY: docker.io
-  REGISTRY_NAMESPACE: mathservice
+  REGISTRY_NAMESPACE: hpt1976
   IMAGE_NAME: hpt1976/payment-service
 
 jobs:
@@ -189,7 +189,7 @@ jobs:
       id: meta
       uses: docker/metadata-action@v5
       with:
-        images: mathservice/${{ env.SERVICE_NAME }}
+        images: hpt1976/${{ env.SERVICE_NAME }}
         tags: |
           type=ref,event=branch
           type=ref,event=pr
@@ -213,7 +213,7 @@ jobs:
     - name: Image vulnerability scan
       uses: aquasecurity/trivy-action@master
       with:
-        image-ref: mathservice/${{ env.SERVICE_NAME }}:latest
+        image-ref: hpt1976/${{ env.SERVICE_NAME }}:latest
         format: 'sarif'
         output: 'trivy-results.sarif'
 
@@ -237,7 +237,7 @@ jobs:
     - name: Deploy to staging environment
       run: |
         echo "🚀 Deploying ${{ env.SERVICE_NAME }} to staging..."
-        echo "Image: mathservice/${{ env.SERVICE_NAME }}:${{ github.sha }}"
+        echo "Image: hpt1976/${{ env.SERVICE_NAME }}:${{ github.sha }}"
         echo "Port: ${{ env.SERVICE_PORT }}"
 
         # Here would be actual deployment commands
@@ -398,3 +398,5 @@ jobs:
         echo "- **Security Scan:** ✅ Completed" >> $GITHUB_STEP_SUMMARY
         echo "- **Payment Gateways:** VNPay, MoMo, ZaloPay" >> $GITHUB_STEP_SUMMARY
         echo "- **Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+
+
