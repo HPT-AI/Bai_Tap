@@ -116,78 +116,12 @@ jobs:
     - name: Run content validation tests
       run: |
         echo "📝 Testing content validation and sanitization..."
-        python -c "
-import html
-import re
-from markupsafe import escape
-
-# Test HTML sanitization
-test_html = '<script>alert(\"xss\")</script><p>Safe content</p>'
-sanitized = escape(test_html)
-print(f'✅ HTML sanitization test: {sanitized}')
-
-# Test content validation
-def validate_content(content):
-    if not content or len(content.strip()) == 0:
-        return False
-    if len(content) > 10000:  # Max content length
-        return False
-    # Check for malicious patterns
-    dangerous_patterns = ['<script', 'javascript:', 'onload=', 'onerror=']
-    content_lower = content.lower()
-    for pattern in dangerous_patterns:
-        if pattern in content_lower:
-            return False
-    return True
-
-test_cases = [
-    'Valid content',
-    '<script>alert(1)</script>',
-    '',
-    'x' * 10001,
-    'Normal content with <b>bold</b> text'
-]
-
-for i, test in enumerate(test_cases):
-    result = validate_content(test)
-    print(f'✅ Content validation test {i+1}: {result}')
-"
+        python -c "import html; import re; from markupsafe import escape; test_html = '<script>alert(\"xss\")</script><p>Safe content</p>'; sanitized = escape(test_html); print(f'✅ HTML sanitization test: {sanitized}'); def validate_content(content): if not content or len(content.strip()) == 0: return False; if len(content) > 10000: return False; dangerous_patterns = ['<script', 'javascript:', 'onload=', 'onerror=']; content_lower = content.lower(); for pattern in dangerous_patterns: if pattern in content_lower: return False; return True; test_cases = ['Valid content', '<script>alert(1)</script>', '', 'x' * 10001, 'Normal content with <b>bold</b> text']; for i, test in enumerate(test_cases): result = validate_content(test); print(f'✅ Content validation test {i+1}: {result}')"
 
     - name: Run translation tests
       run: |
         echo "🌐 Testing multi-language support..."
-        python -c "
-# Test language detection and validation
-supported_languages = ['vi', 'en']
-
-def validate_language(lang_code):
-    return lang_code in supported_languages
-
-def get_default_language():
-    return 'vi'
-
-# Test language validation
-test_languages = ['vi', 'en', 'fr', 'invalid', '']
-for lang in test_languages:
-    is_valid = validate_language(lang)
-    print(f'✅ Language validation {lang}: {is_valid}')
-
-# Test content structure for translations
-content_structure = {
-    'vi': {
-        'title': 'Tiêu đề',
-        'content': 'Nội dung',
-        'meta_description': 'Mô tả'
-    },
-    'en': {
-        'title': 'Title',
-        'content': 'Content',
-        'meta_description': 'Description'
-    }
-}
-
-print(f'✅ Multi-language structure test: {len(content_structure)} languages')
-"
+        python -c "supported_languages = ['vi', 'en']; def validate_language(lang_code): return lang_code in supported_languages; def get_default_language(): return 'vi'; test_languages = ['vi', 'en', 'fr', 'invalid', '']; for lang in test_languages: is_valid = validate_language(lang); print(f'✅ Language validation {lang}: {is_valid}'); content_structure = {'vi': {'title': 'Tiêu đề', 'content': 'Nội dung', 'meta_description': 'Mô tả'}, 'en': {'title': 'Title', 'content': 'Content', 'meta_description': 'Description'}}; print(f'✅ Multi-language structure test: {len(content_structure)} languages')"
 
     - name: Run tests
       run: |
@@ -232,133 +166,6 @@ print(f'✅ Multi-language structure test: {len(content_structure)} languages')
 
   build:
     name: Build Content Service Docker Image
-    runs-on: ubuntu-latest
-    needs: test
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-
-    - name: Log in to Docker Hub
-      uses: docker/login-action@v3
-      with:
-        username: ${{ secrets.DOCKERHUB_USERNAME }}
-        password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-    - name: Extract metadata
-      id: meta
-      uses: docker/metadata-action@v5
-      with:
-        images: mathservice/${{ env.SERVICE_NAME }}
-        tags: |
-          type=ref,event=branch
-          type=ref,event=pr
-          type=sha,prefix={{branch}}-
-          type=raw,value=latest,enable={{is_default_branch}}
-
-    - name: Build and push Docker image
-      uses: docker/build-push-action@v5
-      with:
-        context: ./services/${{ env.SERVICE_NAME }}
-        file: ./services/${{ env.SERVICE_NAME }}/Dockerfile
-        push: true
-        tags: ${{ steps.meta.outputs.tags }}
-        labels: ${{ steps.meta.outputs.labels }}
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
-        build-args: |
-          SERVICE_NAME=${{ env.SERVICE_NAME }}
-          SERVICE_PORT=${{ env.SERVICE_PORT }}
-
-    - name: Image vulnerability scan
-      uses: aquasecurity/trivy-action@master
-      with:
-        image-ref: mathservice/${{ env.SERVICE_NAME }}:latest
-        format: 'sarif'
-        output: 'trivy-results.sarif'
-
-    - name: Upload Trivy scan results
-      uses: github/codeql-action/upload-sarif@v2
-      if: always()
-      with:
-        sarif_file: 'trivy-results.sarif'
-
-  deploy-staging:
-    name: Deploy to Staging
-    runs-on: ubuntu-latest
-    needs: build
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    environment: staging
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Deploy to staging environment
-      run: |
-        echo "🚀 Deploying ${{ env.SERVICE_NAME }} to staging..."
-        echo "Image: mathservice/${{ env.SERVICE_NAME }}:${{ github.sha }}"
-        echo "Port: ${{ env.SERVICE_PORT }}"
-
-        # Here would be actual deployment commands
-        # For example: kubectl, docker-compose, or cloud deployment
-        echo "✅ Deployment to staging completed"
-
-    - name: Run health check
-      run: |
-        echo "🔍 Running health check for ${{ env.SERVICE_NAME }}..."
-        # Here would be actual health check commands
-        # For example: curl http://staging-url/health
-        echo "✅ Health check passed"
-
-    - name: Run content service integration tests
-      run: |
-        echo "📚 Testing content management functionality..."
-        # Here would be integration tests for CMS
-        # Test page creation, FAQ management, translations
-        echo "✅ Content service integration tests passed"
-
-    - name: Run SEO and accessibility tests
-      run: |
-        echo "🔍 Running SEO and accessibility validation..."
-        # Here would be SEO and accessibility tests
-        # Test meta tags, structured data, accessibility compliance
-        echo "✅ SEO and accessibility tests passed"
-
-  notify:
-    name: Notify Team
-    runs-on: ubuntu-latest
-    needs: [test, build, deploy-staging]
-    if: always()
-
-    steps:
-    - name: Notify on success
-      if: needs.test.result == 'success' && needs.build.result == 'success'
-      run: |
-        echo "✅ Content Service CI/CD completed successfully!"
-        echo "- Tests: ✅ Passed"
-        echo "- Build: ✅ Completed"
-        echo "- Deploy: ✅ Staging updated"
-        echo "- Content Validation: ✅ Passed"
-        echo "- Multi-language: ✅ Supported"
-
-    - name: Notify on failure
-      if: needs.test.result == 'failure' || needs.build.result == 'failure'
-      run: |
-        echo "❌ Content Service CI/CD failed!"
-        echo "- Tests: ${{ needs.test.result }}"
-        echo "- Build: ${{ needs.build.result }}"
-        echo "- Deploy: ${{ needs.deploy-staging.result }}"
-        echo "⚠️ Content service deployment blocked due to failures"
-        exit 1
-
-
-  build-docker:
-    name: Build Docker Image
     runs-on: ubuntu-latest
     needs: test
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -475,3 +282,5 @@ print(f'✅ Multi-language structure test: {len(content_structure)} languages')
         echo "- **Features:** Articles, Categories, Tags, Comments" >> $GITHUB_STEP_SUMMARY
         echo "- **Multi-language:** Vietnamese, English support" >> $GITHUB_STEP_SUMMARY
         echo "- **Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+
+
