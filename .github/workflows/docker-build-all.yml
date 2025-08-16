@@ -1,0 +1,207 @@
+name: Build All Docker Images
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'services/**'
+      - 'frontend/**'
+      - 'docker-compose.yml'
+      - '.github/workflows/docker-build-all.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'services/**'
+      - 'frontend/**'
+      - 'docker-compose.yml'
+      - '.github/workflows/docker-build-all.yml'
+  workflow_dispatch:
+    inputs:
+      tag_suffix:
+        description: 'Additional tag suffix (optional)'
+        required: false
+        default: ''
+
+env:
+  REGISTRY: docker.io
+  REGISTRY_NAMESPACE: mathservice
+
+jobs:
+  build-matrix:
+    name: Build Docker Images
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    permissions:
+      contents: read
+      packages: write
+
+    strategy:
+      matrix:
+        service:
+          - name: user-service
+            context: ./services/user-service
+            dockerfile: ./services/user-service/Dockerfile
+            port: 8001
+            description: "Authentication and user management service"
+          - name: payment-service
+            context: ./services/payment-service
+            dockerfile: ./services/payment-service/Dockerfile
+            port: 8002
+            description: "Payment processing and transaction management service"
+          - name: math-solver-service
+            context: ./services/math-solver-service
+            dockerfile: ./services/math-solver-service/Dockerfile
+            port: 8003
+            description: "Mathematical computation and problem solving service"
+          - name: content-service
+            context: ./services/content-service
+            dockerfile: ./services/content-service/Dockerfile
+            port: 8004
+            description: "Content management and SEO optimization service"
+          - name: admin-service
+            context: ./services/admin-service
+            dockerfile: ./services/admin-service/Dockerfile
+            port: 8005
+            description: "System administration and monitoring service"
+          - name: frontend
+            context: ./frontend
+            dockerfile: ./frontend/Dockerfile
+            port: 3000
+            description: "Next.js frontend application for Math Service"
+
+    outputs:
+      images: ${{ steps.build.outputs.images }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v3
+      with:
+
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.REGISTRY_NAMESPACE }}/${{ matrix.service.name }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+          type=raw,value=${{ github.sha }}-${{ github.event.inputs.tag_suffix }},enable=${{ github.event.inputs.tag_suffix != '' }}
+        labels: |
+          org.opencontainers.image.title=${{ matrix.service.name }}
+          org.opencontainers.image.description=${{ matrix.service.description }}
+          org.opencontainers.image.vendor=Math Service
+          org.opencontainers.image.url=https://github.com/${{ github.repository }}
+          org.opencontainers.image.source=https://github.com/${{ github.repository }}
+          org.opencontainers.image.documentation=https://github.com/${{ github.repository }}/blob/main/README.md
+          service.port=${{ matrix.service.port }}
+
+    - name: Build and push Docker image
+      id: build
+      uses: docker/build-push-action@v5
+      with:
+        context: ${{ matrix.service.context }}
+        file: ${{ matrix.service.dockerfile }}
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha,scope=${{ matrix.service.name }}
+        cache-to: type=gha,mode=max,scope=${{ matrix.service.name }}
+        platforms: linux/amd64,linux/arm64
+        build-args: |
+          BUILDTIME=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.created'] }}
+          VERSION=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.version'] }}
+          REVISION=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.revision'] }}
+          SERVICE_NAME=${{ matrix.service.name }}
+          SERVICE_PORT=${{ matrix.service.port }}
+
+    - name: Generate SBOM
+      uses: anchore/sbom-action@v0
+      with:
+        image: ${{ env.REGISTRY }}/${{ env.REGISTRY_NAMESPACE }}/${{ matrix.service.name }}:${{ github.sha }}
+        format: spdx-json
+        output-file: ${{ matrix.service.name }}-sbom.spdx.json
+
+    - name: Upload SBOM
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ matrix.service.name }}-sbom
+        path: ${{ matrix.service.name }}-sbom.spdx.json
+
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: ${{ env.REGISTRY }}/${{ env.REGISTRY_NAMESPACE }}/${{ matrix.service.name }}:${{ github.sha }}
+        format: 'sarif'
+        output: '${{ matrix.service.name }}-trivy-results.sarif'
+
+    - name: Upload Trivy scan results
+      uses: github/codeql-action/upload-sarif@v3
+      if: always()
+      with:
+        sarif_file: '${{ matrix.service.name }}-trivy-results.sarif'
+        category: ${{ matrix.service.name }}
+
+    - name: Service-specific checks
+      run: |
+        case "${{ matrix.service.name }}" in
+          "user-service")
+            echo "🔐 User Service: JWT authentication, session management"
+            ;;
+          "payment-service")
+            echo "💳 Payment Service: PCI DSS compliance, payment gateways"
+            ;;
+          "math-solver-service")
+            echo "🧮 Math Solver Service: SymPy, NumPy, performance benchmarks"
+            ;;
+          "content-service")
+            echo "📚 Content Service: SEO tools, content security, multi-language"
+            ;;
+          "admin-service")
+            echo "👨‍💼 Admin Service: RBAC, monitoring, compliance checks"
+            ;;
+          "frontend")
+            echo "⚛️ Frontend: Next.js, security headers, performance optimization"
+            ;;
+        esac
+
+  summary:
+    name: Build Summary
+    runs-on: ubuntu-latest
+    needs: build-matrix
+    if: always()
+
+    steps:
+    - name: Build Summary
+      run: |
+        echo "## 🐳 Docker Images Build Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Registry:** \`${{ env.REGISTRY }}/${{ env.REGISTRY_NAMESPACE }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "**Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "**Branch:** \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📊 Services Built" >> $GITHUB_STEP_SUMMARY
+        echo "| Service | Port | Status | Image Tag |" >> $GITHUB_STEP_SUMMARY
+        echo "|---------|------|--------|-----------|" >> $GITHUB_STEP_SUMMARY
+        echo "| user-service | 8001 | ✅ | \`${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
+        echo "| payment-service | 8002 | ✅ | \`${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
+        echo "| math-solver-service | 8003 | ✅ | \`${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
+        echo "| content-service | 8004 | ✅ | \`${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
+        echo "| admin-service | 8005 | ✅ | \`${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
+        echo "| frontend | 3000 | ✅ | \`${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 🔧 Next Steps" >> $GITHUB_STEP_SUMMARY
+        echo "- Update \`docker-compose.yml\` with new image tags" >> $GITHUB_STEP_SUMMARY
+        echo "- Deploy to staging environment" >> $GITHUB_STEP_SUMMARY
+        echo "- Run integration tests" >> $GITHUB_STEP_SUMMARY

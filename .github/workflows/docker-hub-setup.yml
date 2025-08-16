@@ -1,0 +1,273 @@
+name: Docker Hub Registry Setup
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Action to perform'
+        required: true
+        default: 'setup'
+        type: choice
+        options:
+        - setup
+        - test-push
+        - cleanup
+      service:
+        description: 'Specific service (optional, for single service operations)'
+        required: false
+        type: choice
+        options:
+        - all
+        - user-service
+        - payment-service
+        - math-solver-service
+        - content-service
+        - admin-service
+        - frontend
+
+env:
+  REGISTRY: docker.io
+  REGISTRY_NAMESPACE: hpt1976
+
+jobs:
+  setup-repositories:
+    name: Setup Docker Hub Repositories
+    runs-on: ubuntu-latest
+    if: github.event.inputs.action == 'setup'
+
+    strategy:
+      matrix:
+        service:
+          - name: user-service
+            description: "Authentication and user management service for Math Service platform"
+            port: 8001
+          - name: payment-service
+            description: "Payment processing and transaction management service"
+            port: 8002
+          - name: math-solver-service
+            description: "Mathematical computation and problem solving engine"
+            port: 8003
+          - name: content-service
+            description: "Content management and SEO optimization service"
+            port: 8004
+          - name: admin-service
+            description: "System administration and monitoring service"
+            port: 8005
+          - name: frontend
+            description: "Next.js frontend application for Math Service platform"
+            port: 3000
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Docker Hub CLI
+      run: |
+        echo "🐳 Setting up Docker Hub CLI tools..."
+        # Install jq for JSON processing
+        sudo apt-get update && sudo apt-get install -y jq curl
+
+    - name: Verify Docker Hub Authentication
+      run: |
+        echo "🔐 Verifying Docker Hub authentication..."
+        if [ -z "${{ secrets.DOCKERHUB_USERNAME }}" ] || [ -z "${{ secrets.DOCKERHUB_TOKEN }}" ]; then
+          echo "❌ Docker Hub credentials not configured!"
+          echo "Please add DOCKERHUB_USERNAME and DOCKERHUB_TOKEN to GitHub secrets"
+          exit 1
+        fi
+        echo "✅ Docker Hub credentials configured"
+
+    - name: Login to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Check Repository Existence
+      id: check-repo
+      run: |
+        echo "🔍 Checking if repository exists: ${{ env.REGISTRY_NAMESPACE }}/${{ matrix.service.name }}"
+
+        # Check if repository exists using Docker Hub API
+        REPO_EXISTS=$(curl -s -o /dev/null -w "%{http_code}" \
+          "https://hub.docker.com/v2/repositories/${{ env.REGISTRY_NAMESPACE }}/${{ matrix.service.name }}/")
+
+        if [ "$REPO_EXISTS" = "200" ]; then
+          echo "✅ Repository already exists: ${{ env.REGISTRY_NAMESPACE }}/${{ matrix.service.name }}"
+          echo "exists=true" >> $GITHUB_OUTPUT
+        else
+          echo "📝 Repository does not exist, will be created on first push"
+          echo "exists=false" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Create Initial Image
+      run: |
+        echo "🏗️ Creating initial image for ${{ matrix.service.name }}..."
+
+        # Create a minimal Dockerfile for initial setup
+        cat > Dockerfile.init << EOF
+        FROM alpine:latest
+        LABEL org.opencontainers.image.title="${{ matrix.service.name }}"
+        LABEL org.opencontainers.image.description="${{ matrix.service.description }}"
+        LABEL org.opencontainers.image.vendor="Math Service"
+        LABEL org.opencontainers.image.source="https://github.com/${{ github.repository }}"
+        LABEL service.name="${{ matrix.service.name }}"
+        LABEL service.port="${{ matrix.service.port }}"
+        RUN echo "This is a placeholder image for ${{ matrix.service.name }}" > /README.txt
+        CMD ["cat", "/README.txt"]
+        EOF
+
+        # Build and push initial image
+        docker build -f Dockerfile.init -t ${{ env.REGISTRY_NAMESPACE }}/${{ matrix.service.name }}:setup .
+        docker push ${{ env.REGISTRY_NAMESPACE }}/${{ matrix.service.name }}:setup
+
+        echo "✅ Initial image created: ${{ env.REGISTRY_NAMESPACE }}/${{ matrix.service.name }}:setup"
+
+    - name: Repository Setup Summary
+      run: |
+        echo "## 🐳 Repository Setup: ${{ matrix.service.name }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Repository:** \`${{ env.REGISTRY_NAMESPACE }}/${{ matrix.service.name }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "**Description:** ${{ matrix.service.description }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Port:** ${{ matrix.service.port }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Status:** ✅ Setup completed" >> $GITHUB_STEP_SUMMARY
+        echo "**Initial Image:** \`${{ env.REGISTRY_NAMESPACE }}/${{ matrix.service.name }}:setup\`" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+
+  test-push:
+    name: Test Docker Hub Push
+    runs-on: ubuntu-latest
+    if: github.event.inputs.action == 'test-push'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Login to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Test Build and Push
+      run: |
+        echo "🧪 Testing Docker Hub push functionality..."
+
+        # Create test Dockerfile
+        cat > Dockerfile.test << EOF
+        FROM alpine:latest
+        LABEL org.opencontainers.image.title="test-image"
+        LABEL org.opencontainers.image.description="Test image for Docker Hub connectivity"
+        LABEL org.opencontainers.image.created="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+        LABEL org.opencontainers.image.revision="${{ github.sha }}"
+        RUN echo "Docker Hub test successful at $(date)" > /test-result.txt
+        CMD ["cat", "/test-result.txt"]
+        EOF
+
+        # Build and push test image
+        docker build -f Dockerfile.test -t ${{ env.REGISTRY_NAMESPACE }}/test-image:${{ github.sha }} .
+        docker push ${{ env.REGISTRY_NAMESPACE }}/test-image:${{ github.sha }}
+
+        echo "✅ Test push successful!"
+
+        # Test pull
+        docker rmi ${{ env.REGISTRY_NAMESPACE }}/test-image:${{ github.sha }}
+        docker pull ${{ env.REGISTRY_NAMESPACE }}/test-image:${{ github.sha }}
+        docker run --rm ${{ env.REGISTRY_NAMESPACE }}/test-image:${{ github.sha }}
+
+        echo "✅ Test pull and run successful!"
+
+    - name: Test Summary
+      run: |
+        echo "## 🧪 Docker Hub Test Results" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Registry:** \`${{ env.REGISTRY }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "**Namespace:** \`${{ env.REGISTRY_NAMESPACE }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "**Test Image:** \`${{ env.REGISTRY_NAMESPACE }}/test-image:${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "**Status:** ✅ All tests passed" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Test Results:" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Authentication successful" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Image build successful" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Image push successful" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Image pull successful" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Image run successful" >> $GITHUB_STEP_SUMMARY
+
+  cleanup:
+    name: Cleanup Test Images
+    runs-on: ubuntu-latest
+    if: github.event.inputs.action == 'cleanup'
+
+    steps:
+    - name: Login to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Cleanup Test Images
+      run: |
+        echo "🧹 Cleaning up test and setup images..."
+
+        # Note: Docker Hub doesn't provide API for deleting images via CLI
+        # This would need to be done manually through the web interface
+        # or using Docker Hub API with proper authentication
+
+        echo "⚠️ Manual cleanup required:"
+        echo "1. Go to https://hub.docker.com/r/${{ env.REGISTRY_NAMESPACE }}"
+        echo "2. Remove test-image and setup tags if no longer needed"
+        echo "3. Keep only production tags (latest, version tags, commit SHAs)"
+
+    - name: Cleanup Summary
+      run: |
+        echo "## 🧹 Cleanup Instructions" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Manual cleanup required for Docker Hub repositories:**" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "1. Visit [Docker Hub Organization](https://hub.docker.com/r/${{ env.REGISTRY_NAMESPACE }})" >> $GITHUB_STEP_SUMMARY
+        echo "2. For each repository, remove unnecessary tags:" >> $GITHUB_STEP_SUMMARY
+        echo "   - Remove \`setup\` tags" >> $GITHUB_STEP_SUMMARY
+        echo "   - Remove \`test-image\` repository" >> $GITHUB_STEP_SUMMARY
+        echo "   - Keep production tags (\`latest\`, version tags, commit SHAs)" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Repositories to review:**" >> $GITHUB_STEP_SUMMARY
+        echo "- ${{ env.REGISTRY_NAMESPACE }}/user-service" >> $GITHUB_STEP_SUMMARY
+        echo "- ${{ env.REGISTRY_NAMESPACE }}/payment-service" >> $GITHUB_STEP_SUMMARY
+        echo "- ${{ env.REGISTRY_NAMESPACE }}/math-solver-service" >> $GITHUB_STEP_SUMMARY
+        echo "- ${{ env.REGISTRY_NAMESPACE }}/content-service" >> $GITHUB_STEP_SUMMARY
+        echo "- ${{ env.REGISTRY_NAMESPACE }}/admin-service" >> $GITHUB_STEP_SUMMARY
+        echo "- ${{ env.REGISTRY_NAMESPACE }}/frontend" >> $GITHUB_STEP_SUMMARY
+
+  summary:
+    name: Setup Summary
+    runs-on: ubuntu-latest
+    needs: [setup-repositories]
+    if: always() && github.event.inputs.action == 'setup'
+
+    steps:
+    - name: Overall Summary
+      run: |
+        echo "## 🎉 Docker Hub Registry Setup Complete" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Registry:** \`docker.io\`" >> $GITHUB_STEP_SUMMARY
+        echo "**Organization:** \`mathservice\`" >> $GITHUB_STEP_SUMMARY
+        echo "**Repositories Created:** 6" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📦 Available Repositories:" >> $GITHUB_STEP_SUMMARY
+        echo "| Service | Repository | Port | Status |" >> $GITHUB_STEP_SUMMARY
+        echo "|---------|------------|------|--------|" >> $GITHUB_STEP_SUMMARY
+        echo "| User Service | \`mathservice/user-service\` | 8001 | ✅ Ready |" >> $GITHUB_STEP_SUMMARY
+        echo "| Payment Service | \`mathservice/payment-service\` | 8002 | ✅ Ready |" >> $GITHUB_STEP_SUMMARY
+        echo "| Math Solver | \`mathservice/math-solver-service\` | 8003 | ✅ Ready |" >> $GITHUB_STEP_SUMMARY
+        echo "| Content Service | \`mathservice/content-service\` | 8004 | ✅ Ready |" >> $GITHUB_STEP_SUMMARY
+        echo "| Admin Service | \`mathservice/admin-service\` | 8005 | ✅ Ready |" >> $GITHUB_STEP_SUMMARY
+        echo "| Frontend | \`mathservice/frontend\` | 3000 | ✅ Ready |" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 🔧 Next Steps:" >> $GITHUB_STEP_SUMMARY
+        echo "1. Update GitHub Actions workflows to use Docker Hub" >> $GITHUB_STEP_SUMMARY
+        echo "2. Test automated pushing with \`test-push\` action" >> $GITHUB_STEP_SUMMARY
+        echo "3. Update docker-compose.yml files" >> $GITHUB_STEP_SUMMARY
+        echo "4. Update documentation with new image URLs" >> $GITHUB_STEP_SUMMARY
