@@ -167,4 +167,3 @@ When adding new scripts:
 
 **Last Updated:** 2024-08-15
 **Maintainer:** Development Team
-

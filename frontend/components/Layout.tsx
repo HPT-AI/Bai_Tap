@@ -9,8 +9,8 @@ interface LayoutProps {
   description?: string;
 }
 
-const Layout: React.FC<LayoutProps> = ({ 
-  children, 
+const Layout: React.FC<LayoutProps> = ({
+  children,
   title = 'Math Service',
   description = 'Website dịch vụ toán học trực tuyến'
 }) => {
@@ -22,7 +22,7 @@ const Layout: React.FC<LayoutProps> = ({
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      
+
       <div className="min-h-screen flex flex-col">
         <Header />
         <main className="flex-grow">
@@ -35,4 +35,3 @@ const Layout: React.FC<LayoutProps> = ({
 };
 
 export default Layout;
-

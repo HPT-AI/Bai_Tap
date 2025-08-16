@@ -20,7 +20,7 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 
-echo ✅ Python found: 
+echo ✅ Python found:
 python --version
 
 REM Check pip
@@ -87,10 +87,10 @@ REM Install pre-commit hooks
 if exist ".pre-commit-config.yaml" (
     echo Installing pre-commit hooks...
     pre-commit install
-    
+
     echo Running pre-commit on all files...
     pre-commit run --all-files
-    
+
     echo ✅ Pre-commit hooks setup completed
 ) else (
     echo ❌ .pre-commit-config.yaml not found
@@ -133,4 +133,3 @@ echo.
 echo Happy coding! 🚀
 echo.
 pause
-

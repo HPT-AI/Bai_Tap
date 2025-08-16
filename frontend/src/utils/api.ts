@@ -8,22 +8,22 @@ export const API_ENDPOINTS = {
   LOGIN: '/auth/login',
   REGISTER: '/auth/register',
   PROFILE: '/users/profile',
-  
-  // Payment Service  
+
+  // Payment Service
   PAYMENT_SERVICE: process.env.NEXT_PUBLIC_PAYMENT_SERVICE_URL || 'http://localhost:8002',
   TRANSACTIONS: '/transactions',
   PAYMENT_METHODS: '/payment-methods',
-  
+
   // Math Solver Service
   MATH_SERVICE: process.env.NEXT_PUBLIC_MATH_SOLVER_SERVICE_URL || 'http://localhost:8003',
   SOLVE_PROBLEM: '/solve',
   PROBLEM_HISTORY: '/problems/history',
-  
+
   // Content Service
   CONTENT_SERVICE: process.env.NEXT_PUBLIC_CONTENT_SERVICE_URL || 'http://localhost:8004',
   PAGES: '/pages',
   FAQS: '/faqs',
-  
+
   // Admin Service
   ADMIN_SERVICE: process.env.NEXT_PUBLIC_ADMIN_SERVICE_URL || 'http://localhost:8005',
   DASHBOARD: '/dashboard',
@@ -36,7 +36,7 @@ export class ApiClient {
 
   constructor(baseUrl: string = API_BASE_URL) {
     this.baseUrl = baseUrl;
-    
+
     // Get token from localStorage if available
     if (typeof window !== 'undefined') {
       this.token = localStorage.getItem('access_token');
@@ -62,7 +62,7 @@ export class ApiClient {
     options: RequestInit = {}
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
-    
+
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
       ...options.headers,
@@ -121,4 +121,3 @@ export const paymentApiClient = new ApiClient(API_ENDPOINTS.PAYMENT_SERVICE);
 export const mathApiClient = new ApiClient(API_ENDPOINTS.MATH_SERVICE);
 export const contentApiClient = new ApiClient(API_ENDPOINTS.CONTENT_SERVICE);
 export const adminApiClient = new ApiClient(API_ENDPOINTS.ADMIN_SERVICE);
-
